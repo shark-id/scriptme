@@ -1,38 +1,41 @@
-name: Build F3MB0Y APK
+name: Build F3MB0Y APK BRUTAL
 on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - [span_0](start_span)uses: actions/checkout@v4[span_0](end_span)
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install System Dependencies
+      - name: Install System Dependencies Brutal
         run: |
-          sudo apt update
-          sudo apt install -y build-essential libffi-dev python3-dev automake autoconf libltdl-dev libtool pkg-config zlib1g-dev adb openjdk-17-jdk zip unzip
-
-      - name: Install Buildozer
-        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libffi-dev python3-dev automake autoconf libltdl-dev libtool pkg-config zlib1g-dev adb openjdk-17-jdk zip unzip
+          # Paksa install Cython versi stabil buat Buildozer
           pip install --upgrade pip
-          pip install buildozer
-          pip install cython
+          [span_1](start_span)[span_2](start_span)pip install Cython==0.29.33 buildozer[span_1](end_span)[span_2](end_span)
 
-      - name: Build APK with Buildozer
+      - name: Build APK (FORCED MODE)
         run: |
-          # Kita paksa accept license biar gak nungguin input manual
+          # Hapus cache lama kalau ada biar gak bentrok
+          rm -rf .buildozer/
+          # Perintah 'yes' brutal buat nembak semua lisensi Android SDK
           yes | buildozer -v android debug
         env:
-          # Ini biar gak error pas build
+          # Bypass error nama organisasi yang pake angka
           BUILDOZER_ALLOW_ORG_NAME_START_WITH_DIGIT: 1
+          # Bypass warning running as root di environment GitHub
+          BUILDOZER_WARN_ON_ROOT: 0
 
-      - name: Upload APK
+      - name: Upload Artifact (The Result)
         uses: actions/upload-artifact@v4
         with:
+          name: F3MB0Y-Payload-Final
+          path: bin/*.apk
           name: F3MB0Y-Payload
           path: bin/*.apk
