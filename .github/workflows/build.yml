@@ -1,41 +1,39 @@
-name: Build F3MB0Y APK BRUTAL
+name: Build F3MB0Y APK
 on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - [span_0](start_span)uses: actions/checkout@v4[span_0](end_span)
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install System Dependencies Brutal
+      - name: Install System Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libffi-dev python3-dev automake autoconf libltdl-dev libtool pkg-config zlib1g-dev adb openjdk-17-jdk zip unzip
-          # Paksa install Cython versi stabil buat Buildozer
+          sudo apt update
+          sudo apt install -y build-essential libffi-dev python3-dev automake autoconf libltdl-dev libtool pkg-config zlib1g-dev adb openjdk-17-jdk zip unzip
           pip install --upgrade pip
-          [span_1](start_span)[span_2](start_span)pip install Cython==0.29.33 buildozer[span_1](end_span)[span_2](end_span)
+          pip install "cython<3.0.0" buildozer  # Paksa Cython versi lama biar stabil
 
-      - name: Build APK (FORCED MODE)
+      - name: Set Java Home
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+
+      - name: Build APK
         run: |
-          # Hapus cache lama kalau ada biar gak bentrok
-          rm -rf .buildozer/
-          # Perintah 'yes' brutal buat nembak semua lisensi Android SDK
-          yes | buildozer -v android debug
+          # JANGAN pake 'yes |', Buildozer terbaru kadang crash kalo di-pipe gitu
+          # Kita pake flag --accept-sdk-license bawaan buildozer
+          buildozer -v android debug
         env:
-          # Bypass error nama organisasi yang pake angka
           BUILDOZER_ALLOW_ORG_NAME_START_WITH_DIGIT: 1
-          # Bypass warning running as root di environment GitHub
-          BUILDOZER_WARN_ON_ROOT: 0
+          # Otomatis setuju lisensi tanpa 'yes |'
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "True"
 
-      - name: Upload Artifact (The Result)
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: F3MB0Y-Payload-Final
-          path: bin/*.apk
-          name: F3MB0Y-Payload
           path: bin/*.apk
